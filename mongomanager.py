@@ -1,4 +1,12 @@
-
+#! /usr/bin/env python
+"""
+#
+#
+#
+  
+"""
+import os
+import sys
 
 from pymongo import MongoClient
 
@@ -9,14 +17,19 @@ class MongoDatabase():
   > Main class for interaction with MongoDB
   """
 
-  def __init__(self, CONFIG):
+  def __init__(self, config, log):
     """
     MongoDatabase.__init__
     > sets the configured host
     """
     print ("mongo wake-up")
-    self.host = CONFIG['MONGO']['DB_HOST']
+
+    self.log = log
+    self.config = config
+    self.host = self.config['MONGO']['DB_HOST']
     self._connected = False
+    print (self.config['MONGO']['DB_HOST'])
+    
 
 
   def _connect(self):
@@ -29,12 +42,13 @@ class MongoDatabase():
       return
 
     self.client = MongoClient(self.host)
-    self.db = self.client[CONFIG['MONGO']['DB_NAME']]
+    self.db = self.client[self.config['MONGO']['DB_NAME']]
 
-    if CONFIG['MONGO']['AUTHENTICATE']:
-      self.db.authenticate(CONFIG['MONGO']['USER'], CONFIG['MONGO']['PASS'])
+    if self.config['MONGO']['AUTHENTICATE']:
+      self.db.authenticate(self.config['MONGO']['USER'], self.config['MONGO']['PASS'])
 
     self._connected = True
+    
 
   def getFileDataObject(self, file):
     """
