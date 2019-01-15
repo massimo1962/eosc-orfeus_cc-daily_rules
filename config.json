@@ -1,34 +1,41 @@
 {
-  "VERSION": "0.4.0",
-  "VERSION_DATE": "2017-07-11",
-  "ARCHIVE": "EIDA NODE",
-  "PUBLISHER": "OBSPY MSEED-QC",
-  "STRUCTURE": "SDS",
-  "MONGO": {
-    "ENABLED": true,
-    "DB_HOST": "10.10.10.10:27017/",
-    "DB_NAME": "xoxoxoxo",
-    "USER": "user",
-    "PASS": "pass",
-    "AUTHENTICATE": false,
-    "ALLOW_DOUBLE": false
-  },
-  "ARCHIVE_ROOT": "/var/lib/datairods/archive_B",
-  "DEFAULT_LOG_FILE": "WFCatalog-collector.log",
-  "PROCESSING_TIMEOUT": 120,
-  "ENABLE_DUBLIN_CORE": false,
-  "FILTERS": {
-    "WHITE": ["*"],
-    "BLACK": []
-  },
-  "IRODS": {
-    "ENABLED": true,
-    "HOST": "dockerirods-aio",
-    "PORT": "1247",
-    "USER": "xoxoxo",
-    "PWD" : "xoxoxo",
-    "ZONE": "xoxoxo",
-    "BASE_PATH": "/xoxoxo/home/rods"
-   } 
+    "VERSION": "0.4.0",
+    "VERSION_DATE": "2017-07-11",
+    "ARCHIVE": "EIDA NODE",
+    "PUBLISHER": "OBSPY MSEED-QC",
+    "STRUCTURE": "SDS",
+    "ARCHIVE_ROOT": "/var/lib/data",
+    "DEFAULT_LOG_FILE": "WFCatalog-collector.log",
+    "PROCESSING_TIMEOUT": 120,
+    "ENABLE_DUBLIN_CORE": true,
+    "FILTERS": {
+        "WHITE": ["*"],
+        "BLACK": []
+    },
+    "DUBLIN_CORE": {
+        "ENABLED": true,
+        "CLS_ORM": "eudat.models.mongo.wf_do",
+        "AUTH_NETWORKS": "XX",
+        "AFTER_AUTH_NETWORKS": ["XX", "XX", "XX",...],
+        "STATION_ENDPOINT" : "http://webservices.fdsn/fdsnws/station/1/query?",
+        "HTTP_CONNECTION" : "webservices.fdsn"
+    },
+    "MONGO": {
+        "ENABLED": true,
+        "DB_HOST": "10.10.10.10:27017",
+        "DB_NAME": "xxxxxx",
+        "USER": "user",
+        "PASS": "pass",
+        "AUTHENTICATE": false,
+        "ALLOW_DOUBLE": false
+    },
+    "IRODS": {
+        "ENABLED": true,
+        "HOST": "host-address-or-dns",
+        "PORT": "1247",
+        "USER": "xoxoxo",
+        "PWD" : "xoxoxo",
+        "ZONE": "XXXX",
+        "BASE_PATH": "/XXXX/home/rods"
+    }
 }
-
