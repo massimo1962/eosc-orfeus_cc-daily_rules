@@ -14,24 +14,22 @@ import csv
 import http.client
 import datetime
 
+#
+# class for interaction with MongoDB & process Dublin Core
+#
 class dublinDAO():
 
     def __init__(self, config, log ):
-        """
-        DublinCoreDAO.__init__
-       
-        """
+
         print("dublinCore wake-up")
         self.log = log
         self.config = config
         
-
-    
-
+    #
+    # Main DC Meta processing
+    #
     def _processDCmeta(self, mongo, irods, collname, start_time, file, datastations): 
-      
-        print("start process")
-
+              
         fileStart = datetime.datetime.now()
 
         self.log.info("Starting processing file %s", file)
@@ -43,7 +41,7 @@ class dublinDAO():
             if my_doc is not None:
                 #
                 print(my_doc)
-                #mongo._storeFileDataObject(my_doc)
+                mongo._storeWFDataObject(my_doc)
 
             # test 
             #docu = self._createDataObject(file)
@@ -58,16 +56,11 @@ class dublinDAO():
 
         print("Completed processing file in %s" % (datetime.datetime.now() - fileStart))
 
-
+    #
+    # retrieve data stations via webservices
+    #
     def getDataStations(self):
-        """
-        Get data Station from webservices; 
-        From config
-        endpoint:
-        http://webservices.rm.ingv.it/fdsnws/station/1/query?
-        query:
-        network=IV&format=text
-        """
+        
         self.mystations = {}
         
         mynet = str(self.config["DUBLIN_CORE"]["AUTH_NETWORKS"])
@@ -93,8 +86,9 @@ class dublinDAO():
     
         return self.mystations    
 
-
-
+    #
+    # process Dublin Core Meta and build a Json Doc for Mongo
+    #
     def _createDataObject(self, mongo, irods, collname, start_time, file, datastations):       
 
         currentCursor  = mongo.getFileDataObject(file)
@@ -157,9 +151,6 @@ class dublinDAO():
           'irods_path':iPath
           
         }
-
-        #print (document)
-        #self.log.info(str(document))
 
         return document
 

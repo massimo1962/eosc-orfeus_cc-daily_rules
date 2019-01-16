@@ -24,32 +24,14 @@ print (cfg_dir)
 
 with open(os.path.join(cfg_dir, 'config.json'), "r") as cfg:
   config = json.load(cfg)
-"""
-def handler(signum, frame):
-    raise Exception("Metric calculation has timed out")
 
-    from logging.handlers import TimedRotatingFileHandler
-
-    # ObsPy mSEED-QC is required
-    try:
-      from obspy.signal.quality_control import MSEEDMetadata
-    except ImportError as ex:
-      raise ImportError('Failure to load MSEEDMetadata; ObsPy mSEED-QC is required.')
-
-    # Load configuration from JSON
-    cfg_dir = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(cfg_dir, 'config.json'), "r") as cfg:
-      config = json.load(cfg)
-
-    if config['MONGO']['ENABLED']:
-      from pymongo import MongoClient
-"""
+#
+# main()
+#
 class main():
 
     def __init__(self, parsedargs, config):
-        """
-        ****
-        """
+
         self.config = config
         self._setupLogger(parsedargs['logfile'])
         self.parsedargs = parsedargs        
@@ -58,11 +40,11 @@ class main():
             import mongomanager
             self.mongo = mongomanager.MongoDatabase(self.config, self.log)
 
-
+    #
+    # Main
+    #        
     def mainProcess(self ):
-        """
-        *****
-        """
+
         print ("START Main")
       
         timeInitialized = datetime.datetime.now()
@@ -84,16 +66,13 @@ class main():
 
 
         # get stations infrmations via webservices
-        print("datastations")
+        print("get datastations")
         datastations = dublinCore.getDataStations()
 
-        #for data in datastations:
-        #    print(data)
-        
         # get file list 
         # filtered
-        # 
-        #print("files")
+        #
+        print("get FileList") 
         files = WFcollector.getFileList()
 
         #
@@ -102,25 +81,24 @@ class main():
         print ("start loop")
         for file in files:
 
+            # useful variables
             start_time = WFcollector._getDateFromFile(file)
             collname = self.irodsPath ( file, self.config['IRODS']['BASE_PATH'])
             dirname, filename = os.path.split(file)
+            object_path = '{collname}/{filename}'.format(**locals())
 
-            
-            self.log.info("#.................................................................")
+            # Log header for each file processed
+            self.log.info("#.................................................................START: "+file)
             self.log.info( "file: "+file)
             self.log.info( "collname: " + collname)
             self.log.info( "dirname: "+ dirname)
             self.log.info( "filename: "+ filename)
             
 
-            #................................................................. iREG_INGESTION - ok
+            #................................................................. iREG_INGESTION iCOMMAND - ok
             #
             # Exec Proc: Register Digital objects into iRODS
             #
-            #print("files")
-
-            
             self.log.info("iREG on iRODS of : "+file)
             try:
                 self.irods.doRegister( dirname, collname, filename)
@@ -130,103 +108,64 @@ class main():
                 pass
             
 
-            #self._filterFiles()
-            #print (self.files)   RegRule.r   eudatGetV.r
             #................................................................. TEST_RULE - ok
-
-            rule_path = '/usr/src/collector/source_final/eudatGetV.r'
-            self.log.info("exec rule "+ rule_path+" on file : "+file)
+            #
+            """
+            # rule execution w/o params (called directly)
+            rule_path = '/var/lib/irods/myrules/source_final/eudatGetV.r'
+            self.log.info("exec TEST rule "+ rule_path+" on file : "+file)
 
             try:
-                myvalue = irods._ruleExec(rule_path)
+                myvalue = self.irods._ruleExec(rule_path)
             except Exception as ex:
                 self.log.error("Could not execute a rule")
                 self.log.error(ex)
                 pass
+            """
 
-            #................................................................. PID
+
+            #................................................................. PID - ok
             #
             # Exec Rule:  Make a PID and register into EPIC
             #
 
-            #rule_path = '/usr/src/collector/source_final/eudatPidSingleCheck2.r'
-            rule_path = '/var/lib/irods/myrules/source_final/eudatPidSingleCheck2.r'
-            self.log.info("exec rule "+ rule_path+" on file : "+file)
+            # rule execution w params (called w rule-body, params, and output -must-)
+            self.log.info("call PID rule  on file : "+file)
     
-            object_path = collname+"/"+filename
-            # test metadata
-            attr_name = "test_attr"
-            attr_value = "test_value"
+            # make a pid
+            retValue = rulePIDsingle(self, object_path)
 
-            # rule parameters
-            input_params = {  # extra quotes for string literals
-                '*object': '"{object_path}"'.format(**locals()),
-                '*name': '"{attr_name}"'.format(**locals()),
-                '*value': '"{attr_value}"'.format(**locals())
-            }
-            output = 'ruleExecOut'
+            self.log.info(" PID for digitalObject: "+object_path+" is: " retValue[5])
 
-            # run test rule
-            myrule = Rule(session, rule_file=rule_path,
-                          params=input_params, output=output)
-            
-
-            try:
-                returnedArray = myrule.execute()
-            except Exception as ex:
-                self.log.error("Could not execute a rule")
-                self.log.error(ex)
-                pass
-            
-
-            """
-            rule_path = '/var/lib/irods/myrules/source_final/eudatPidSingle.r'
-            self.log.info("exec rule "+ rule_path+" on file : "+file)
-            try:
-                myvalue = irods._ruleExec(rule_path)
-            except Exception as ex:
-                self.log.error("Could not execute a rule")
-                self.log.error(ex)
-                continue
-
-            """
 
             #................................................................. REPLICATION
             #
             # Exec Rule: DO a Remote Replica 
             #
-            """
-            rule_path = '/var/lib/irods/myrules/source_final/eudatReplication.r'
-            self.log.info("exec rule "+ rule_path+" on file : "+file)
-            try:
-                myvalue = irods._ruleExec(rule_path)
-            except Exception as ex:
-                self.log.error("Could not execute a rule")
-                self.log.error(ex)
-                continue
-            """
+            self.log.info("call REPLICATION rule  on file : "+file)
+
+            # make a replica
+            retValue = ruleReplication(self, object_path)
+
+            self.log.info(" REPLICA for digitalObject: "+object_path+" in: " retValue[5])
 
 
-            #................................................................. REGISTRATION_REPLPID
+            #................................................................. REGISTRATION_REPLICA
             #
             # Exec Rule: Registration of Rmote PID into local ICAT
             #
-            """
-            rule_path = '/var/lib/irods/myrules/source_final/RegRule.r'
-            self.log.info("exec rule "+ rule_path+" on file : "+file)
-            try:
-                myvalue = irods._ruleExec(rule_path)
-            except Exception as ex:
-                self.log.error("Could not execute a rule")
-                self.log.error(ex)
-                continue
-            """
+            self.log.info("call REGISTRATION rule  on file : "+file)
+
+            # make a pid
+            retValue = ruleRegistration(self, object_path)
+
+            self.log.info(" REGISTRATION for digitalObject: "+object_path+" with: " retValue[5])
+
 
             #................................................................. DUBLINCORE_META - ok
             #
             # Exec Proc: Store DublinCore metadata into mongo WF_CATALOG
-            #
-            
+            #           
             self.log.info("_processDCmeta of : "+file)
             try:
                 
@@ -236,16 +175,11 @@ class main():
                 self.log.error(ex)
                 pass
 
-            
-
-
 
             #................................................................. WFCATALOG_META -ok
             #
             # Exec Proc: Store WF_CATALOG metadata into mongo WF_CATALOG
-            #
-
-            
+            #            
             self.log.info("_collectMetadata of : "+file)
             try:
                 WFcollector._collectMetadata(file)
@@ -253,50 +187,42 @@ class main():
                 self.log.error("Could not compute WF metadata")
                 self.log.error(ex)
                 pass
-            
-            
 
-        # END FOR        
-
+            # Log tail for each file processed
+            self.log.info("#.................................................................STOP: "+file)    
+         
+        # /END FOR        
 
         print ("END Main ")
 
-        # Delete or process files
-        #if self.args['delete']:
-        #  self._deleteFiles()
-        #else:
-        #  self._processFiles()
-
         self.log.info("collector synchronization completed in %s." % (datetime.datetime.now() - timeInitialized))
-
-     # irods path maker
+    
+    #
+    # irods path maker
+    # 
     def irodsPath (self, file, irodsPathBase):
         
-       
-        #irodsPathBase = "/INGV/home/rods/san/archive/"
-        #filename =  'NI.ACOM..HHE.D.2015.006'
-
         fileSplit = os.path.basename(file).split('.')
         if irodsPathBase[:-1] != '/' : irodsPathBase = irodsPathBase+"/"
-
+        # with filename
         #irodsPath = irodsPathBase+fileSplit[5]+"/"+fileSplit[0]+"/"+fileSplit[1]+"/"+fileSplit[3]+".D"+"/"+os.path.basename(file)
+
+        # without filename
         irodsPath = irodsPathBase+fileSplit[5]+"/"+fileSplit[0]+"/"+fileSplit[1]+"/"+fileSplit[3]+".D"
 
         return irodsPath
 
-
-     # bild logger   
+    #
+    # build logger   
+    #  
     def _setupLogger(self, logfile):
-        """
-        WFCatalogCollector._setupLogger
-        > logging setup for the WFCatalog Collector
-        """
 
         # Set up WFCatalogger
         self.log = logging.getLogger('WFCatalog Collector')
 
         log_file = logfile or config['DEFAULT_LOG_FILE']
 
+        # Set Level
         self.log.setLevel('INFO')
 
         self.file_handler = TimedRotatingFileHandler(log_file, when="midnight")

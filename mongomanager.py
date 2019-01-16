@@ -10,18 +10,14 @@ import sys
 
 from pymongo import MongoClient
 
-
+#
+# class for interaction with MongoDB
+#
 class MongoDatabase():
-  """
-  MongoDatabase
-  > Main class for interaction with MongoDB
-  """
+
 
   def __init__(self, config, log):
-    """
-    MongoDatabase.__init__
-    > sets the configured host
-    """
+
     print ("mongo wake-up")
 
     self.log = log
@@ -30,80 +26,77 @@ class MongoDatabase():
     self._connected = False
     print (self.config['MONGO']['DB_HOST'])
     
+    #
+    # class for interaction with MongoDB
+    #
+    def _connect(self):
+        
+        if self._connected:
+          return
 
+        self.client = MongoClient(self.host)
+        self.db = self.client[self.config['MONGO']['DB_NAME']]
 
-  def _connect(self):
-    """
-    MongoDatabase._connect
-    > Sets up connection to the MongoDB
-    """
+        if self.config['MONGO']['AUTHENTICATE']:
+          self.db.authenticate(self.config['MONGO']['USER'], self.config['MONGO']['PASS'])
 
-    if self._connected:
-      return
+        self._connected = True
+        
+    #
+    # MongoDatabase.getFileDataObject
+    #
+    def getFileDataObject(self, file):
 
-    self.client = MongoClient(self.host)
-    self.db = self.client[self.config['MONGO']['DB_NAME']]
+        return self.db.wf_do.find({'fileId': os.path.basename(file)})
 
-    if self.config['MONGO']['AUTHENTICATE']:
-      self.db.authenticate(self.config['MONGO']['USER'], self.config['MONGO']['PASS'])
+    #
+    # MongoDatabase._storeFileDataObject
+    # stored data object to wf_do collection
+    #
+    def _storeWFDataObject(self, obj):
+ 
+        return self.db.wf_do.save(obj)
 
-    self._connected = True
-    
+    #
+    # MongoDatabase._storeGranule
+    # stores daily and hourly granules to collections
+    #
+    def _storeGranule(self, stream, granule):
 
-  def getFileDataObject(self, file):
-    """
-    MongoDatabase.getFileDataObject
-    """
-    return self.db.wf_do.find({'fileId': os.path.basename(file)})
+        if granule == 'daily':
+          return self.db.daily_streams.save(stream)
+        elif granule == 'hourly':
+          return self.db.hourly_streams.save(stream)
 
-  def _storeFileDataObject(self, obj):
-    """
-    MongoDatabase._storeFileDataObject
-    stored data object to wf_do collection
-    """  
-    return self.db.wf_do.save(obj)
+    #
+    # MongoDatabase.removeDocumentsById
+    # removes documents all related to ObjectId
+    #
+    def removeDocumentsById(self, id):
+       
+        self.db.daily_streams.remove({'_id': id})
+        self.db.hourly_streams.remove({'streamId': id})
+        self.db.c_segments.remove({'streamId': id})
 
-  def _storeGranule(self, stream, granule):
-    """
-    MongoDatabase._storeGranule
-    > stores daily and hourly granules to collections
-    """
+    #
+    # MongoDatabase.storeContinuousSegment
+    # Saves a continuous segment to collection
+    #
+    def storeContinuousSegment(self, segment):
+       
+        self.db.c_segments.save(segment)
 
-    if granule == 'daily':
-      return self.db.daily_streams.save(stream)
-    elif granule == 'hourly':
-      return self.db.hourly_streams.save(stream)
+    #
+    # MongoDatabase.getDailyFilesById
+    # returns all documents that include this file in the metadata calculation
+    #
+    def getDailyFilesById(self, file):
+        
+        return self.db.daily_streams.find({'files.name': os.path.basename(file)}, {'files': 1, 'fileId': 1, '_id': 1})
 
-
-  def removeDocumentsById(self, id):
-    """
-    MongoDatabase.removeDocumentsById
-    > removes documents all related to ObjectId
-    """
-    self.db.daily_streams.remove({'_id': id})
-    self.db.hourly_streams.remove({'streamId': id})
-    self.db.c_segments.remove({'streamId': id})
-
-
-  def storeContinuousSegment(self, segment):
-    """
-    MongoDatabase.storeContinuousSegment
-    > Saves a continuous segment to collection
-    """
-    self.db.c_segments.save(segment)
-
-
-  def getDailyFilesById(self, file):
-    """
-    MongoDatabase.getDailyFilesById
-    returns all documents that include this file in the metadata calculation
-    """
-    return self.db.daily_streams.find({'files.name': os.path.basename(file)}, {'files': 1, 'fileId': 1, '_id': 1})
-
-
-  def getDocumentByFilename(self, file):
-    """
-    MongoDatabase.getDocumentByFilename
-    balbal
-    """
-    return self.db.daily_streams.find({'fileId': os.path.basename(file)})
+    #
+    # MongoDatabase.getDocumentByFilename
+    #
+    def getDocumentByFilename(self, file):
+        
+        return self.db.daily_streams.find({'fileId': os.path.basename(file)})
