@@ -15,7 +15,7 @@ import http.client
 import datetime
 
 #
-# class for interaction with MongoDB & process Dublin Core
+# class for process Dublin Core
 #
 class dublinDAO():
 
