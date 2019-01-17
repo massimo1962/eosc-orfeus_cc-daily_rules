@@ -16,7 +16,7 @@
         "ENABLED": true,
         "CLS_ORM": "eudat.models.mongo.wf_do",
         "AUTH_NETWORKS": "XX",
-        "AFTER_AUTH_NETWORKS": ["XX", "XX", "XX",...],
+        "AFTER_AUTH_NETWORKS": ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
         "STATION_ENDPOINT" : "http://webservices.fdsn/fdsnws/station/1/query?",
         "HTTP_CONNECTION" : "webservices.fdsn"
     },

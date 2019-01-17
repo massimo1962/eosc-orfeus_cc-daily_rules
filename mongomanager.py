@@ -11,7 +11,7 @@ import sys
 from pymongo import MongoClient
 
 #
-# class for interaction with MongoDB
+# class for persistence with MongoDB
 #
 class MongoDatabase():
 
