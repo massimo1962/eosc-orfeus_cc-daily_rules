@@ -32,7 +32,7 @@ class dublinDAO():
               
         fileStart = datetime.datetime.now()
 
-        self.log.info("Starting processing file %s", file)
+        self.log.info("Starting processing DC for file %s", file)
 
         try:
 
@@ -40,7 +40,7 @@ class dublinDAO():
             my_doc = self._createDataObject(mongo, irods, collname, start_time, file, datastations)
             if my_doc is not None:
                 #
-                print(my_doc)
+                #print(my_doc)
                 mongo._storeWFDataObject(my_doc)
 
             # test 
@@ -52,9 +52,9 @@ class dublinDAO():
             self.log.error(ex)
             pass
 
-        self.log.info("Completed processing file in %s" % (datetime.datetime.now() - fileStart))
+        self.log.info("Completed processing DC for file in %s" % (datetime.datetime.now() - fileStart))
 
-        print("Completed processing file in %s" % (datetime.datetime.now() - fileStart))
+        #print("Completed processing  DC for file in %s" % (datetime.datetime.now() - fileStart))
 
     #
     # retrieve data stations via webservices
@@ -107,7 +107,7 @@ class dublinDAO():
         except Exception as ex:
             # failure PID check
             self.log.error("PID missing on: "+os.path.basename(file)+" : insert fake pid")
-            PID = '11099/fakePid'
+            PID = '11099/*********fakePid**********'
             iPath = obj_path
             pass
         
@@ -126,7 +126,7 @@ class dublinDAO():
         
         # Create data object literal with additional metadata
         # '_cls' : 'commons.models.mongo.wf_do' is needed from pymodm into HTTP-API
-        self.log.info("start document")
+        self.log.info("prep document")
         document = {
           '_cls' : 'eudat.models.mongo.wf_do',  
           'fileId': os.path.basename(file),

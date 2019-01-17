@@ -95,6 +95,10 @@ class main():
             self.log.info( "filename: "+ filename)
             
 
+            # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
+
+
             #................................................................. iREG_INGESTION iCOMMAND - ok
             #
             # Exec Proc: Register Digital objects into iRODS
@@ -138,7 +142,7 @@ class main():
             self.log.info(" PID for digitalObject: "+object_path+" is: " retValue[5])
 
 
-            #................................................................. REPLICATION
+            #................................................................. REPLICATION - ok 
             #
             # Exec Rule: DO a Remote Replica 
             #
@@ -150,7 +154,7 @@ class main():
             self.log.info(" REPLICA for digitalObject: "+object_path+" in: " retValue[5])
 
 
-            #................................................................. REGISTRATION_REPLICA
+            #................................................................. REGISTRATION_REPLICA - ok (should be) 
             #
             # Exec Rule: Registration of Rmote PID into local ICAT
             #
@@ -187,6 +191,11 @@ class main():
                 self.log.error("Could not compute WF metadata")
                 self.log.error(ex)
                 pass
+
+
+            # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
+
 
             # Log tail for each file processed
             self.log.info("#.................................................................STOP: "+file)    

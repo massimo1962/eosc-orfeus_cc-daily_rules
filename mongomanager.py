@@ -27,7 +27,7 @@ class MongoDatabase():
     print (self.config['MONGO']['DB_HOST'])
     
     #
-    # class for interaction with MongoDB
+    # connect to MongoDB
     #
     def _connect(self):
         
@@ -43,22 +43,21 @@ class MongoDatabase():
         self._connected = True
         
     #
-    # MongoDatabase.getFileDataObject
+    # get FileDataObject
     #
     def getFileDataObject(self, file):
 
         return self.db.wf_do.find({'fileId': os.path.basename(file)})
 
     #
-    # MongoDatabase._storeFileDataObject
+    # _store FileDataObject
     # stored data object to wf_do collection
     #
     def _storeWFDataObject(self, obj):
  
         return self.db.wf_do.save(obj)
-
-    #
-    # MongoDatabase._storeGranule
+    
+    # 
     # stores daily and hourly granules to collections
     #
     def _storeGranule(self, stream, granule):
@@ -67,9 +66,8 @@ class MongoDatabase():
           return self.db.daily_streams.save(stream)
         elif granule == 'hourly':
           return self.db.hourly_streams.save(stream)
-
-    #
-    # MongoDatabase.removeDocumentsById
+    
+    # 
     # removes documents all related to ObjectId
     #
     def removeDocumentsById(self, id):
@@ -77,17 +75,15 @@ class MongoDatabase():
         self.db.daily_streams.remove({'_id': id})
         self.db.hourly_streams.remove({'streamId': id})
         self.db.c_segments.remove({'streamId': id})
-
-    #
-    # MongoDatabase.storeContinuousSegment
+    
+    # 
     # Saves a continuous segment to collection
     #
     def storeContinuousSegment(self, segment):
        
         self.db.c_segments.save(segment)
-
-    #
-    # MongoDatabase.getDailyFilesById
+    
+    # 
     # returns all documents that include this file in the metadata calculation
     #
     def getDailyFilesById(self, file):
@@ -95,7 +91,7 @@ class MongoDatabase():
         return self.db.daily_streams.find({'files.name': os.path.basename(file)}, {'files': 1, 'fileId': 1, '_id': 1})
 
     #
-    # MongoDatabase.getDocumentByFilename
+    # get a Document By Filename
     #
     def getDocumentByFilename(self, file):
         

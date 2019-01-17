@@ -115,7 +115,7 @@ class irodsDAO():
         return self.session.data_objects.get(obj_path)
 
     #
-    # irods Rule Execution: PID
+    # irods Rule Execution: PID creation  (PID)
     #
     def rulePIDsingle(self, object_path):
            
@@ -166,13 +166,14 @@ class irodsDAO():
         return returnedMeta 
 
     #
-    # irods Rule Execution: REPLICATION
+    # irods Rule Execution: REPLICATION   (REP)
     #
     def ruleReplication(self, object_path, target_path):
           
-        self.log.info("exec PID SINGLE rule inside irods ")
+        self.log.info("exec Replication rule inside irods ")
+        returnedMeta = {}
 
-        # rule parameters
+       # rule parameters
         input_params = {  # extra quotes for string literals
             "*source": '"{object_path}"'.format(**locals()),
             '*destination' : '"{target_path}"'.format(**locals())
@@ -184,8 +185,8 @@ class irodsDAO():
         # rule body
         rule_body = textwrap.dedent('''\
                                     Replication {
-                                                *registered = bool("true");
-                                                *recursive = bool("true");
+                                                *registered = "true";
+                                                *recursive = "true";
                                                 *status = EUDATReplication(*source, *destination, *registered, *recursive, *response);
                                                 if (*status) {
                                                     writeLine("stdout", "Replica *source on *destination Success!");
@@ -210,44 +211,44 @@ class irodsDAO():
             print(ex)
             pass
 
-        return returnedMeta    
+        return returnedMeta  
 
-        #
-        # irods Rule Execution: REGISTRATION
-        #
-        def ruleRegistration(self, object_path, target_path):
-                   
-            self.log.info("exec PID SINGLE rule inside irods ")
+    #
+    # irods Rule Execution: REMOTE REPLICA REGISTRATION  (RRR)
+    #
+    def ruleRegistration(self, object_path, target_path):
+               
+        self.log.info("exec  Registration Reote replicated object inside irods ")
 
-            # rule parameters
-            input_params = {  # extra quotes for string literals
-                "*source": '"{object_path}"'.format(**locals()),
-                '*destination' : '"{target_path}"'.format(**locals())
-            }
+        # rule parameters   
+        input_params = {  # extra quotes for string literals
+            "*source": '"{object_path}"'.format(**locals()),
+            '*destination' : '"{target_path}"'.format(**locals())
+        }
 
-            # rule Output
-            output = 'ruleExecOut'
+        # rule Output
+        output = 'ruleExecOut'
 
-            # rule body
-            rule_body = textwrap.dedent('''\
-                                        RegRule {
-                                                *notification = 1
-                                                EUDATPIDRegistration(*source, *destination, *notification, *response);
-                                                writeLine("stdout","EUDAT registration: *response");
-                                            }
-                                    ''')
+        # rule body
+        rule_body = textwrap.dedent('''\
+                                    RegRule {
+                                            *notification = 1
+                                            EUDATPIDRegistration(*source, *destination, *notification, *response);
+                                            writeLine("stdout","EUDAT registration: *response");
+                                        }
+                                ''')
 
-            # prep  rule
-            myrule = Rule(self.session, body=rule_body, params=input_params, output=output )
-            
-            # exec rule
-            try:
-                myrule.execute()
-                 # check that metadata is there
-                returnedMeta = self.session.metadata.get(DataObject, object_path)
-            except Exception as ex:
-                print("Could not execute a rule for PID ")
-                print(ex)
-                pass
+        # prep  rule
+        myrule = Rule(self.session, body=rule_body, params=input_params, output=output )
+        
+        # exec rule
+        try:
+            myrule.execute()
+             # check that metadata is there
+            returnedMeta = self.session.metadata.get(DataObject, object_path)
+        except Exception as ex:
+            print("Could not execute a rule for PID ")
+            print(ex)
+            pass
 
-            return returnedMeta         
+        return returnedMeta         
