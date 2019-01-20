@@ -12,14 +12,6 @@
         "WHITE": ["*"],
         "BLACK": []
     },
-    "DUBLIN_CORE": {
-        "ENABLED": true,
-        "CLS_ORM": "eudat.models.mongo.wf_do",
-        "AUTH_NETWORKS": "XX",
-        "AFTER_AUTH_NETWORKS": ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
-        "STATION_ENDPOINT" : "http://webservices.fdsn/fdsnws/station/1/query?",
-        "HTTP_CONNECTION" : "webservices.fdsn"
-    },
     "MONGO": {
         "ENABLED": true,
         "DB_HOST": "10.10.10.10:27017",
@@ -28,6 +20,13 @@
         "PASS": "pass",
         "AUTHENTICATE": false,
         "ALLOW_DOUBLE": false
+    },
+     "DUBLIN_CORE": {
+        "ENABLED": true,
+        "CLS_ORM": "eudat.models.mongo.wf_do",
+        "AUTH_NETWORKS": ["XX","XX","XX","XX" ],
+        "STATION_ENDPOINT" : "http://webservices.fdsn/fdsnws/station/1/query?",
+        "HTTP_CONNECTION" : "webservices.fdsn"
     },
     "IRODS": {
         "ENABLED": true,

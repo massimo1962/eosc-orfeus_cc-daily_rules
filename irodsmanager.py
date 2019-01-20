@@ -8,6 +8,7 @@
 
 import os
 import json
+import textwrap
 
 import irods
 from irods.session import iRODSSession
@@ -20,20 +21,19 @@ from irods.meta import iRODSMeta
 from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta,CollectionMeta, ResourceMeta, UserMeta)
 from irods.results import ResultSet
 from irods.rule import Rule
-
 from irods.meta import iRODSMetaCollection
 from irods.exception import CollectionDoesNotExist
 
 
 #
-# irodsManager
+#  data access object class for irods
 #
 class irodsDAO():
 
 
     def __init__(self, config, log):
 
-        print("irods wake-up")
+        print("irods ")
         self.session = None
         self.log = log
         self.config = config
@@ -63,15 +63,18 @@ class irodsDAO():
         self._checkCollExsist(collname)
         
         # register file in test collection
-        
+        self.log.info("check obj_file : "+obj_file)
+        self.log.info("check obj_path : "+obj_path)
+
         self.log.info("check or create a collection recursively : "+collname)
         try:
             self.session.data_objects.register(obj_file, obj_path)
             self.log.info("file registered! : "+obj_path)
         except Exception as ex:
-            self.log.error("Could not register a file_obj  ")
+            self.log.error("Could not register a file_obj  ")         
             self.log.error(ex)
             pass
+
         # confirm object presence
         #obj = self.session.data_objects.get(obj_path)
         
@@ -134,6 +137,10 @@ class irodsDAO():
         # rule Output
         output = 'ruleExecOut'
 
+        #
+        # @TODO: move writeLine from stdout to rodsLog - serverLog
+        #
+
         # rule body
         rule_body = textwrap.dedent('''\
                                     eudatPidSingleCheck2 {
@@ -141,10 +148,10 @@ class irodsDAO():
                                       EUDATSearchPID(*path, *existing_pid)
                                       if (*existing_pid == "empty") {
                                         EUDATCreatePID(*parent_pid, *path, *ror, *fio, *fixed, *newPID);
-                                        writeLine("stdout","PID-new: *newPID");
+                                        writeLine("serverLog","PID-new: *newPID");
                                       }
                                       else {
-                                        writeLine("stdout","PID-existing: *existing_pid");
+                                        writeLine("serverLog","PID-existing: *existing_pid");
                                       }
                                     }
                                     
@@ -207,7 +214,7 @@ class irodsDAO():
              # check that metadata is there
             returnedMeta = self.session.metadata.get(DataObject, object_path)
         except Exception as ex:
-            print("Could not execute a rule for PID ")
+            print("Could not execute a rule for REPLICATION ")
             print(ex)
             pass
 
@@ -247,7 +254,7 @@ class irodsDAO():
              # check that metadata is there
             returnedMeta = self.session.metadata.get(DataObject, object_path)
         except Exception as ex:
-            print("Could not execute a rule for PID ")
+            print("Could not execute a rule for REGISTRATION ")
             print(ex)
             pass
 

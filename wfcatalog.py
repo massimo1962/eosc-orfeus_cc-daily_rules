@@ -15,15 +15,18 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 
 import wfcollector
+import wfsequencer
 
 #
 # Load configuration from JSON
 #
 cfg_dir = os.path.dirname(os.path.realpath(__file__))
-print (cfg_dir)
-
+print("load conf")
 with open(os.path.join(cfg_dir, 'config.json'), "r") as cfg:
   config = json.load(cfg)
+
+
+  
 
 #
 # main()
@@ -34,177 +37,76 @@ class main():
 
         self.config = config
         self._setupLogger(parsedargs['logfile'])
-        self.parsedargs = parsedargs        
+        self.parsedargs = parsedargs 
 
+        # mongo
         if self.config['MONGO']['ENABLED']:
             import mongomanager
-            self.mongo = mongomanager.MongoDatabase(self.config, self.log)
+            self.mongo = mongomanager.MongoDAO(self.config, self.log)
 
     #
-    # Main
+    # Main Run
     #        
     def mainProcess(self ):
 
-        print ("START Main")
-      
+        print ("START Main")      
         timeInitialized = datetime.datetime.now()
 
-        #collector = collector.WFCatalogCollector(parsedargs, config, mongo, self.log)
+        # connect to mongo DB
         self.mongo._connect()
 
-        WFcollector = wfcollector.WFCatalogCollector( self.parsedargs, self.config, self.mongo, self.log)
+        # WF Collector
+        self.WFcollector = wfcollector.WFCatalogCollector( self.parsedargs, self.config, self.mongo, self.log)
+        print("WFcollector ")
 
+        # iRODS
         if self.config['IRODS']['ENABLED']:
-            print ("irods enabled")
             import irodsmanager
             self.irods = irodsmanager.irodsDAO(self.config, self.log)
 
-
+        # Dublin Core
         if self.config['DUBLIN_CORE']['ENABLED']:
-            import dublinCore
-            dublinCore = dublinCore.dublinDAO(self.config, self.log) 
+            import wfdublincore
+            self.dublinCore = wfdublincore.dublinCore(self.config, self.log) 
 
+        #  file property      
+        digitObjProperty = {}        
+       
+        # get stations informations via webservices
+        print("get datastations")        
+        digitObjProperty["datastations"] = self.dublinCore.getDataStations()
 
-        # get stations infrmations via webservices
-        print("get datastations")
-        datastations = dublinCore.getDataStations()
-
-        # get file list 
-        # filtered
-        #
+        # get *filtered*  DigitalObject list to process
         print("get FileList") 
-        files = WFcollector.getFileList()
+        files = self.WFcollector.getFileList()
+        # set sequencer 
+        sequencer = wfsequencer.sequencer(self.config, self.log, self.irods, self.mongo, self.WFcollector, self.dublinCore )
 
         #
         # applay rules on each file
         #
-        print ("start loop")
         for file in files:
 
-            # useful variables
-            start_time = WFcollector._getDateFromFile(file)
-            collname = self.irodsPath ( file, self.config['IRODS']['BASE_PATH'])
+            # Digital Object Property extraction            
             dirname, filename = os.path.split(file)
-            object_path = '{collname}/{filename}'.format(**locals())
+            digitObjProperty["file"] = file
+            digitObjProperty["start_time"] = self.WFcollector._getDateFromFile(file)
+            collname = self.irodsPath ( file, self.config['IRODS']['BASE_PATH'])
+            colltarget = self.irodsPath ( file, self.config['IRODS']['REMOTE_PATH'])
+            digitObjProperty["dirname"] = dirname
+            digitObjProperty["filename"] = filename
+            digitObjProperty["collname"] = collname
+            digitObjProperty["object_path"] = '{collname}/{filename}'.format(**locals())
+            digitObjProperty["target_path"] = '{colltarget}/{filename}'.format(**locals())
 
-            # Log header for each file processed
-            self.log.info("#.................................................................START: "+file)
-            self.log.info( "file: "+file)
-            self.log.info( "collname: " + collname)
-            self.log.info( "dirname: "+ dirname)
-            self.log.info( "filename: "+ filename)
-            
-
-            # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-
-
-
-            #................................................................. iREG_INGESTION iCOMMAND - ok
             #
-            # Exec Proc: Register Digital objects into iRODS
-            #
-            self.log.info("iREG on iRODS of : "+file)
-            try:
-                self.irods.doRegister( dirname, collname, filename)
-            except Exception as ex:
-                self.log.error("Could not execute a icommand iReg ")
-                self.log.error(ex)
-                pass
-            
+            # run rules sequence 
+            sequencer.doSequence(digitObjProperty)
 
-            #................................................................. TEST_RULE - ok
-            #
-            """
-            # rule execution w/o params (called directly)
-            rule_path = '/var/lib/irods/myrules/source_final/eudatGetV.r'
-            self.log.info("exec TEST rule "+ rule_path+" on file : "+file)
-
-            try:
-                myvalue = self.irods._ruleExec(rule_path)
-            except Exception as ex:
-                self.log.error("Could not execute a rule")
-                self.log.error(ex)
-                pass
-            """
-
-
-            #................................................................. PID - ok
-            #
-            # Exec Rule:  Make a PID and register into EPIC
-            #
-
-            # rule execution w params (called w rule-body, params, and output -must-)
-            self.log.info("call PID rule  on file : "+file)
-    
-            # make a pid
-            retValue = rulePIDsingle(self, object_path)
-
-            self.log.info(" PID for digitalObject: "+object_path+" is: " retValue[5])
-
-
-            #................................................................. REPLICATION - ok 
-            #
-            # Exec Rule: DO a Remote Replica 
-            #
-            self.log.info("call REPLICATION rule  on file : "+file)
-
-            # make a replica
-            retValue = ruleReplication(self, object_path)
-
-            self.log.info(" REPLICA for digitalObject: "+object_path+" in: " retValue[5])
-
-
-            #................................................................. REGISTRATION_REPLICA - ok (should be) 
-            #
-            # Exec Rule: Registration of Rmote PID into local ICAT
-            #
-            self.log.info("call REGISTRATION rule  on file : "+file)
-
-            # make a pid
-            retValue = ruleRegistration(self, object_path)
-
-            self.log.info(" REGISTRATION for digitalObject: "+object_path+" with: " retValue[5])
-
-
-            #................................................................. DUBLINCORE_META - ok
-            #
-            # Exec Proc: Store DublinCore metadata into mongo WF_CATALOG
-            #           
-            self.log.info("_processDCmeta of : "+file)
-            try:
-                
-                dublinCore._processDCmeta(self.mongo, self.irods, collname, start_time, file, datastations)
-            except Exception as ex:
-                self.log.error("Could not process DublinCore metadata")
-                self.log.error(ex)
-                pass
-
-
-            #................................................................. WFCATALOG_META -ok
-            #
-            # Exec Proc: Store WF_CATALOG metadata into mongo WF_CATALOG
-            #            
-            self.log.info("_collectMetadata of : "+file)
-            try:
-                WFcollector._collectMetadata(file)
-            except Exception as ex:
-                self.log.error("Could not compute WF metadata")
-                self.log.error(ex)
-                pass
-
-
-            # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-
-
-
-            # Log tail for each file processed
-            self.log.info("#.................................................................STOP: "+file)    
-         
-        # /END FOR        
 
         print ("END Main ")
 
-        self.log.info("collector synchronization completed in %s." % (datetime.datetime.now() - timeInitialized))
+        self.log.info(" ** Sequence is done, collector synchronization completed in %s." % (datetime.datetime.now() - timeInitialized))
     
     #
     # irods path maker
@@ -213,6 +115,7 @@ class main():
         
         fileSplit = os.path.basename(file).split('.')
         if irodsPathBase[:-1] != '/' : irodsPathBase = irodsPathBase+"/"
+
         # with filename
         #irodsPath = irodsPathBase+fileSplit[5]+"/"+fileSplit[0]+"/"+fileSplit[1]+"/"+fileSplit[3]+".D"+"/"+os.path.basename(file)
 
@@ -281,10 +184,10 @@ if __name__ == '__main__':
     # compatibility with an imported class
     parsedargs = vars(parser.parse_args())
 
-    
+    ## wake-up
     main = main(parsedargs, config)
     
-    ## pass policy here
+    ## rock-n-roll
     main.mainProcess() 
     
     

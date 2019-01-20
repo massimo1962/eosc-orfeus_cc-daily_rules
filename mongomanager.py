@@ -11,20 +11,19 @@ import sys
 from pymongo import MongoClient
 
 #
-# class for persistence with MongoDB
+# data access object class for MongoDB
 #
-class MongoDatabase():
+class MongoDAO():
 
 
-  def __init__(self, config, log):
+    def __init__(self, config, log):
 
-    print ("mongo wake-up")
+        print ("mongo ")
 
-    self.log = log
-    self.config = config
-    self.host = self.config['MONGO']['DB_HOST']
-    self._connected = False
-    print (self.config['MONGO']['DB_HOST'])
+        self.log = log
+        self.config = config
+        self.host = self.config['MONGO']['DB_HOST']
+        self._connected = False
     
     #
     # connect to MongoDB
@@ -43,11 +42,21 @@ class MongoDatabase():
         self._connected = True
         
     #
-    # get FileDataObject
+    # get wf_do FileDataObject
     #
     def getFileDataObject(self, file):
 
         return self.db.wf_do.find({'fileId': os.path.basename(file)})
+
+    #
+    #
+    #
+    def _storeFileDataObject(self, obj):
+        """
+        MongoDatabase._storeFileDataObject
+        stored data object to wf_do collection
+        """  
+        return self.db.wf_do.save(obj)    
 
     #
     # _store FileDataObject

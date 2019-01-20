@@ -231,7 +231,7 @@ class WFCatalogCollector():
     # 3. process them
     self._getFiles()
     self._filterFiles()
-    print (self.files)
+    #print (self.files)
     print ("END ***")
 
     # Delete or process files
@@ -405,18 +405,13 @@ class WFCatalogCollector():
     # SDS structure is slightly more complex, loop over all directories
     # in a year and extract files ending with a given jday
     elif self.config['STRUCTURE'] == 'SDS':
-      print(year)
       collectedFiles = []
       directory = os.path.join(self.config['ARCHIVE_ROOT'], year)
-      print (directory)
       for subdir, dirs, files in os.walk(directory):        
 
         for file in files:
-          print (file)
 
           if file.endswith(jday) and os.path.isfile(os.path.join(subdir, file)):
-            #print ("file added : " + file +"  jday = "+jday)
-            print(os.path.basename(file).split('.')[5])
             #if  os.path.basename(file).split('.')[5] == year :
             collectedFiles.append(os.path.join(subdir, file))
     
@@ -640,7 +635,7 @@ class WFCatalogCollector():
     return metadata.meta
 
 
-  def _collectMetadata(self, file):
+  def collectMetadata(self, file):
     """
     WFCatalogCollector._collectMetadata
     > collects the metadata from the ObsPy mseedMetadata class

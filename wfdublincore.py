@@ -17,18 +17,18 @@ import datetime
 #
 # class for process Dublin Core
 #
-class dublinDAO():
+class dublinCore():
 
     def __init__(self, config, log ):
 
-        print("dublinCore wake-up")
+        print("dublinCore ")
         self.log = log
         self.config = config
         
     #
     # Main DC Meta processing
     #
-    def _processDCmeta(self, mongo, irods, collname, start_time, file, datastations): 
+    def processDCmeta(self, mongo, irods, collname, start_time, file, datastations): 
               
         fileStart = datetime.datetime.now()
 
@@ -56,6 +56,7 @@ class dublinDAO():
 
         #print("Completed processing  DC for file in %s" % (datetime.datetime.now() - fileStart))
 
+
     #
     # retrieve data stations via webservices
     #
@@ -63,7 +64,21 @@ class dublinDAO():
         
         self.mystations = {}
         
-        mynet = str(self.config["DUBLIN_CORE"]["AUTH_NETWORKS"])
+        for net in self.config["DUBLIN_CORE"]["AUTH_NETWORKS"]:
+            #mynet = str(self.config["DUBLIN_CORE"]["AUTH_NETWORKS"])
+            self.mystations[net] = self._getDataStation(net)
+        
+
+        return  self.mystations
+
+    #
+    # retrieve data stations via webservices
+    #
+    def _getDataStation(self, mynet):
+        
+        mystations = {}
+        
+        #mynet = str(self.config["DUBLIN_CORE"]["AUTH_NETWORKS"])
         
         query = self.config['DUBLIN_CORE']['STATION_ENDPOINT']+"network="+mynet+"&format=text"
         #query = "http://webservices.rm.ingv.it/fdsnws/station/1/query?"+"network="+mynet+"&format=text"
@@ -78,13 +93,13 @@ class dublinDAO():
         try:
             self.log.info("start retrieve data stations")
             for e in dataStations.split("\n"):
-                self.mystations[e.split('|')[1]]={"lat":e.split('|')[2],"lon":e.split('|')[3]}
+                mystations[e.split('|')[1]]={"lat":e.split('|')[2],"lon":e.split('|')[3]}
                
         except Exception as ex:
             self.log.info("end of data stations found")
             pass
-    
-        return self.mystations    
+        
+        return mystations    
 
     #
     # process Dublin Core Meta and build a Json Doc for Mongo
@@ -114,8 +129,9 @@ class dublinDAO():
         
         #Lat-lon-elevation
         sta = os.path.basename(file).split('.')[1]
+        net = os.path.basename(file).split('.')[0]
         self.log.info(sta)
-        georef = datastations[sta]  
+        georef = datastations[net][sta]  
         elevation= 0
         self.log.info(georef)
         #Time-window
