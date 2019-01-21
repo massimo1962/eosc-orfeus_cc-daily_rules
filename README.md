@@ -1,5 +1,5 @@
 # eosc-orfeus_cc-daily_rules
-## ingestion and extract metadata from ORFEUS_CC daily files; apply some rules on data
+## ingestion and extract metadata from ORFEUS_CC daily files, apply some rules & actions on data
 Composed by WFmetadata extraction, DublinCore compute, and iRODS/B2safe ingestion & management.
 
 The project give the capability to choose one sequence of action to be applied to the data files (mseed) and execute this job every time that we can specify e.g. into crontab.
