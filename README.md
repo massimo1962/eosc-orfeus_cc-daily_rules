@@ -10,10 +10,12 @@ A separate file called ruleMap.json is in charge to set the sequence and what st
 
 All the metadata extracted here are inserted into mongoDB instance that is the same of the WFCollector (wfrepo) and the Dublin Core collection (useful for HTTP-API-B2STAGE) is integrated into this, iRODS integration is also performed in order to be able to expose our data on EUDAT/EOSC-HUB/EPOS ecosystems and to make our data more be FAIR.
 
-Generation of PIDs and save info inside iRODS and MongoDB; 
-make a EUDAT replication;
-and many other activities;
-are executed on regular base thanks to the iRODS rules and specific functions.
+- Generation of PIDs and save info inside iRODS and MongoDB; 
+- make a EUDAT replication;
+- WFCatalog Metadata extraction;
+- and many other activities;
+
+ are executed on regular base thanks to the iRODS rules and specific functions.
 
 At this time we have a few rules and some actions but, in the future we can think about increase or change they, following the ORFEUS_CC nodes needs/policy. 
 
