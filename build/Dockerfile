@@ -51,7 +51,7 @@ RUN git clone https://github.com/obspy/obspy.git
 WORKDIR /obspy
 
 RUN pip install -e .
-RUN pip install pyproject
+RUN RUN pip install pyproj
 
 RUN mkdir -p /var/lib/datairods
 
