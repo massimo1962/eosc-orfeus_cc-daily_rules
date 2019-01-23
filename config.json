@@ -35,6 +35,7 @@
         "USER": "xoxoxo",
         "PWD" : "xoxoxo",
         "ZONE": "XXXX",
-        "BASE_PATH": "/XXXX/home/rods"
+        "BASE_PATH": "/XXXX/home/rods",
+        "REMOTE_PATH": "/YYYY/home/rods#XXXX"
     }
 }
