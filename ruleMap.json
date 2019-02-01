@@ -2,13 +2,9 @@
     "RULE_MAP_VERSION": "0.0.1",
     "VERSION_DATE": "2019-01-10", 
     "SEQUENCE": {
-        "1": "INGESTION",
+        
         "2": "TEST_RULE",
-        "3": "PID",
-        "4": "REPLICA",
-        "5": "REGISTER",
-        "6": "DUBLIN_CORE",
-        "7": "WF_CATALOG"
+        "3": "PID"
     },
     "RULE_MAP": {
         "INGESTION": "register",
@@ -18,6 +14,12 @@
         "REGISTER": "RegistrationRule",
         "DUBLIN_CORE": "DublinCoreMeta",
         "WF_CATALOG": "WFCatalogMeta"
+    },
+    "RULE_PATHS": {
+        "TEST_RULE": "/var/lib/irods/myrules/source_final/eudatGetV.r",
+        "PID": "/var/lib/irods/myrules/source_final/eudatPidSingleCheck2.r",
+        "REPLICA": "/var/lib/irods/myrules/source_final/eudatReplication2.r",
+        "REGISTER": "/var/lib/irods/myrules/source_final/RegRule.r"
     },
     "_list_available_rules_": {
         "1": "INGESTION",

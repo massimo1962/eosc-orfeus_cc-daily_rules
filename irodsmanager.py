@@ -51,6 +51,7 @@ class irodsDAO():
         self.session = iRODSSession(host=str(self.config['IRODS']['HOST']), port=str(self.config['IRODS']['PORT']), user=str(self.config['IRODS']['USER']), password=str(self.config['IRODS']['PWD']), zone=str(self.config['IRODS']['ZONE']))
         self.log.info("done")
 
+
     #
     # irods ingestion iREG
     #
@@ -82,11 +83,12 @@ class irodsDAO():
         #print (obj)
        
     #
-    # Execute a demo rule
+    # Execute a paramless rule
     #
     def _ruleExec(self, rule_file_path):
 
-        #self._irodsConnect()
+        self._irodsConnect()
+        #print("path rule: "+rule_file_path)
 
         # run  rule
         myrule = Rule(self.session, rule_file_path)
@@ -95,7 +97,7 @@ class irodsDAO():
         return ruleout
 
     #
-    # Check if a collection exsist
+    # Check if a collection exsist, if not create recursively
     #
     def _checkCollExsist(self, collname):
 
@@ -108,6 +110,7 @@ class irodsDAO():
             self.log.error(ex)
             pass
 
+
     #
     # get Digital Object
     #
@@ -117,145 +120,145 @@ class irodsDAO():
 
         return self.session.data_objects.get(obj_path)
 
+
     #
     # irods Rule Execution: PID creation  (PID)
     #
-    def rulePIDsingle(self, object_path):
+    def rulePIDsingle(self, object_path, rule_path):
            
+        # check connection
+        self._irodsConnect()
+
         self.log.info("exec PID SINGLE rule inside irods ")
 
-        # rule parameters
-        input_params = {  # extra quotes for string literals
-            "*path": '"{object_path}"'.format(**locals()),
-            '*pid' : '"null"'.format(**locals()),
-            '*parent_pid':'"none"'.format(**locals()),
-            '*ror':'"none"'.format(**locals()),
-            '*fio':'"none"'.format(**locals()),
-            '*fixed':'"False"'.format(**locals())
-        }
-
-        # rule Output
-        output = 'ruleExecOut'
-
-        #
-        # @TODO: move writeLine from stdout to rodsLog - serverLog
-        #
-
-        # rule body
-        rule_body = textwrap.dedent('''\
-                                    eudatPidSingleCheck2 {
-
-                                      EUDATSearchPID(*path, *existing_pid)
-                                      if (*existing_pid == "empty") {
-                                        EUDATCreatePID(*parent_pid, *path, *ror, *fio, *fixed, *newPID);
-                                        writeLine("serverLog","PID-new: *newPID");
-                                      }
-                                      else {
-                                        writeLine("serverLog","PID-existing: *existing_pid");
-                                      }
-                                    }
-                                    
-                                ''')
-
+        # load rule from file
+        rule_total = self.load_rule(rule_path, path='"{object_path}"'.format(**locals()) )
+        
         # prep  rule
-        myrule = Rule(self.session, body=rule_body, params=input_params, output=output )
+        myrule = Rule(self.session, body=rule_total['body'], params=rule_total['params'], output=rule_total['output'] )
         
         # exec rule
         try:
             myrule.execute()
-             # check that metadata is there
-            returnedMeta = self.session.metadata.get(DataObject, object_path)
+            # check that metadata is there
+            #returnedMeta = self.session.metadata.get(DataObject, object_path)
+            self.log.info(" PID for digitalObject: "+object_path+" is: OK")
         except Exception as ex:
-            print("Could not execute a rule for PID ")
-            print(ex)
-            pass
+            self.log.info("Could not execute a rule for PID ")
+            self.log.info(ex)
+            pass        
 
-        return returnedMeta 
+        return 1 #returnedMeta 
+
 
     #
     # irods Rule Execution: REPLICATION   (REP)
     #
-    def ruleReplication(self, object_path, target_path):
-          
+    def ruleReplication(self, object_path, target_path, rule_path):
+
+        # check connection
+        self._irodsConnect()  
         self.log.info("exec Replication rule inside irods ")
         returnedMeta = {}
 
-       # rule parameters
-        input_params = {  # extra quotes for string literals
-            "*source": '"{object_path}"'.format(**locals()),
-            '*destination' : '"{target_path}"'.format(**locals())
-        }
-
-        # rule Output
-        output = 'ruleExecOut'
-
-        # rule body
-        rule_body = textwrap.dedent('''\
-                                    Replication {
-                                                *registered = "true";
-                                                *recursive = "true";
-                                                *status = EUDATReplication(*source, *destination, *registered, *recursive, *response);
-                                                if (*status) {
-                                                    writeLine("stdout", "Replica *source on *destination Success!");
-                                                }
-                                                else {
-                                                    writeLine("stdout", "Replica *source on *destination Failed: *response");
-                                                }
-                                            }
-                                    
-                                ''')
+        # load rule from file
+        rule_total = self.load_rule(rule_path, source='"{object_path}"'.format(**locals()), destination='"{target_path}"'.format(**locals()) )
 
         # prep  rule
-        myrule = Rule(self.session, body=rule_body, params=input_params, output=output )
+        myrule = Rule(self.session, body=rule_total['body'], params=rule_total['params'], output=rule_total['output'] )
         
         # exec rule
         try:
             myrule.execute()
-             # check that metadata is there
-            returnedMeta = self.session.metadata.get(DataObject, object_path)
+            # check that metadata is there
+            #returnedMeta = self.session.metadata.get(DataObject, object_path)
+            self.log.info(" REPLICA for digitalObject: "+object_path+" is: OK")
         except Exception as ex:
-            print("Could not execute a rule for REPLICATION ")
-            print(ex)
+            self.log.info("Could not execute a rule for REPLICATION ")
+            self.log.info(ex)
             pass
 
-        return returnedMeta  
+        return 1 #returnedMeta  
+
 
     #
     # irods Rule Execution: REMOTE REPLICA REGISTRATION  (RRR)
     #
-    def ruleRegistration(self, object_path, target_path):
-               
-        self.log.info("exec  Registration Reote replicated object inside irods ")
+    def ruleRegistration(self, object_path, target_path, rule_path):
+        
+        # check connection
+        self._irodsConnect()       
+        self.log.info("exec  Registration Remote replicated object inside irods ")
 
-        # rule parameters   
-        input_params = {  # extra quotes for string literals
-            "*source": '"{object_path}"'.format(**locals()),
-            '*destination' : '"{target_path}"'.format(**locals())
-        }
-
-        # rule Output
-        output = 'ruleExecOut'
-
-        # rule body
-        rule_body = textwrap.dedent('''\
-                                    RegRule {
-                                            *notification = 1
-                                            EUDATPIDRegistration(*source, *destination, *notification, *response);
-                                            writeLine("stdout","EUDAT registration: *response");
-                                        }
-                                ''')
+        # load rule from file
+        rule_total = self.load_rule(rule_path, source='"{object_path}"'.format(**locals()), destination='"{target_path}"'.format(**locals()) )
 
         # prep  rule
-        myrule = Rule(self.session, body=rule_body, params=input_params, output=output )
+        myrule = Rule(self.session, body=rule_total['body'], params=rule_total['params'], output=rule_total['output'] )
         
         # exec rule
         try:
             myrule.execute()
-             # check that metadata is there
-            returnedMeta = self.session.metadata.get(DataObject, object_path)
+            # check that metadata is there
+            #returnedMeta = self.session.metadata.get(DataObject, object_path)
+            self.log.info(" REGISTRATION for digitalObject: "+object_path+" is: OK")
         except Exception as ex:
-            print("Could not execute a rule for REGISTRATION ")
-            print(ex)
+            self.log.info("Could not execute a rule for REGISTRATION ")
+            self.log.info(ex)
             pass
 
-        return returnedMeta         
+        return 1 #returnedMeta  
+
+
+    #
+    # load irods rule from rule_file.r
+    #    
+    def load_rule(self, rule_file, **parameters):
+        results = {}
+        params = {}
+        output = ''
+        body = '@external\n'
+
+        # parse rule file
+        with open(rule_file) as f:
+            for line in f:
+                # parse input line
+                if line.strip().lower().startswith('input'):
+                    input_header, input_line = line.split(None, 1)
+
+                    # sanity check
+                    if input_header.lower() != 'input':
+                        raise ValueError
+
+                    # parse *param0="value0",*param1="value1",...
+                    for pair in input_line.split(','):
+                        label, value = pair.split('=')
+                        params[label.strip()] = value.strip()
+
+
+                # parse output line
+                elif line.strip().lower().startswith('output'):
+                    output_header, output_line = line.split(None, 1)
+
+                    # sanity check
+                    if output_header.lower() != 'output':
+                        raise ValueError
+
+                    # use line as is
+                    output = output_line.strip()
+
+                # parse rule
+                else:
+                    body += line
+
+        # put passed parameters in params            
+        for key, value in parameters.items():
+            params['*'+key] = value
+
+        results['params']=params
+        results['body']=body
+        results['output']=output
+
+        return results          
+
+
