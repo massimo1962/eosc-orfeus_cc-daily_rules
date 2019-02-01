@@ -2,9 +2,13 @@
     "RULE_MAP_VERSION": "0.0.1",
     "VERSION_DATE": "2019-01-10", 
     "SEQUENCE": {
-        
+        "1": "INGESTION",
         "2": "TEST_RULE",
-        "3": "PID"
+        "3": "PID",
+        "4": "REPLICA",
+        "5": "REGISTER",
+        "6": "DUBLIN_CORE",
+        "7": "WF_CATALOG"
     },
     "RULE_MAP": {
         "INGESTION": "register",
